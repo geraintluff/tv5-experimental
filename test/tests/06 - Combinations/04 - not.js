@@ -5,7 +5,7 @@ describe("Combinators 04", function () {
 		var schema = {
 			"not": {"type": "string"}
 		};
-		var valid = tv4.validate(data, schema);
+		var valid = tv5.validate(data, schema);
 		assert.isTrue(valid);
 	});
 
@@ -14,7 +14,7 @@ describe("Combinators 04", function () {
 		var schema = {
 			"not": {"type": "string"}
 		};
-		var valid = tv4.validate(data, schema);
+		var valid = tv5.validate(data, schema);
 		assert.isFalse(valid);
 	});
 });

@@ -1,13 +1,13 @@
 {
-  "name": "tv4",
-  "version": "1.0.8",
+  "name": "tv5",
+  "version": "0.0.0",
   "author": "Geraint Luff",
-  "description": "A public domain JSON Schema validator for JavaScript",
+  "description": "An experimental JSON Schema validator for JavaScript",
   "keywords": [
     "json-schema",
     "schema",
     "validator",
-    "tv4"
+    "tv5"
   ],
   "maintainers": [
     {
@@ -16,15 +16,15 @@
       "web": "https://github.com/geraintluff/"
     }
   ],
-  "main": "tv4.js",
+  "main": "tv5.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/geraintluff/tv4.git"
+    "url": "https://github.com/geraintluff/tv5-experimental.git"
   },
   "license:": [
     {
       "type": "Public Domain",
-      "url": "http://geraintluff.github.io/tv4/LICENSE.txt"
+      "url": "http://geraintluff.github.io/tv5/LICENSE.txt"
     },
     {
       "type": "MIT",

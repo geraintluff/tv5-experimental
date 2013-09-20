@@ -9,7 +9,7 @@ describe("Combinators 02", function () {
 			{"minLength": 1}
 		]
 	};
-	var valid = tv4.validate(data, schema);
+	var valid = tv5.validate(data, schema);
 	assert.isTrue(valid);
 });
 
@@ -21,7 +21,7 @@ it("anyOf failure", function () {
 			{"type": "string"}
 		]
 	};
-	var valid = tv4.validate(data, schema);
+	var valid = tv5.validate(data, schema);
 	assert.isFalse(valid);
 });
 });

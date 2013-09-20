@@ -8,7 +8,7 @@ describe("Objects 03", function () {
 				stringKey: {"type": "string"}
 			}
 		};
-		var valid = tv4.validate(data, schema);
+		var valid = tv5.validate(data, schema);
 		assert.isTrue(valid);
 	});
 
@@ -20,7 +20,7 @@ describe("Objects 03", function () {
 				stringKey: {"type": "string"}
 			}
 		};
-		var valid = tv4.validate(data, schema);
+		var valid = tv5.validate(data, schema);
 		assert.isFalse(valid);
 	});
 });

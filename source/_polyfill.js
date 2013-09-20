@@ -95,7 +95,7 @@ if (!Array.prototype.indexOf) {
 // Grungey Object.isFrozen hack
 if (!Object.isFrozen) {
 	Object.isFrozen = function (obj) {
-		var key = "tv4_test_frozen_key";
+		var key = "tv5_test_frozen_key";
 		while (obj.hasOwnProperty(key)) {
 			key += Math.random();
 		}

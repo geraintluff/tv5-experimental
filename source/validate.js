@@ -11,7 +11,7 @@ var ValidatorContext = function ValidatorContext(parent, collectMultiple, errorM
 		this.scanned = [];
 		this.scannedFrozen = [];
 		this.scannedFrozenSchemas = [];
-		this.key = 'tv4_validation_id';
+		this.key = 'tv5_validation_id';
 	}
 	this.errorMessages = errorMessages;
 };

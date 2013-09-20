@@ -5,11 +5,11 @@ describe("Recursive objects 01", function () {
 		itemA.b = itemB;
 		var aSchema = { properties: { b: { $ref: 'bSchema' }}};
 		var bSchema = { properties: { a: { $ref: 'aSchema' }}};
-		tv4.addSchema('aSchema', aSchema);
-		tv4.addSchema('bSchema', bSchema);
-		tv4.validate(itemA, aSchema, true);
-		tv4.validate(itemA, aSchema, function () {}, true);
-		tv4.validateResult(itemA, aSchema, true);
-		tv4.validateMultiple(itemA, aSchema, true);
+		tv5.addSchema('aSchema', aSchema);
+		tv5.addSchema('bSchema', bSchema);
+		tv5.validate(itemA, aSchema, true);
+		tv5.validate(itemA, aSchema, function () {}, true);
+		tv5.validateResult(itemA, aSchema, true);
+		tv5.validateMultiple(itemA, aSchema, true);
 	});
 });

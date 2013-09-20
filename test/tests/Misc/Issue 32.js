@@ -39,12 +39,12 @@ describe("Issue 32", function () {
 		};
 
 		// Usage 1
-		var expectedUsage1Result = tv4.validate(addlPropInSubSchema, mySchema);
+		var expectedUsage1Result = tv5.validate(addlPropInSubSchema, mySchema);
 		assert.isFalse(expectedUsage1Result, 'plain validate should fail');
 		//this.assert(!expectedUsage1Result, 'plain validate should fail');
 
 		// Usage 2
-		var expectedUsage2Result = tv4.validateResult(addlPropInSubSchema, mySchema);
+		var expectedUsage2Result = tv5.validateResult(addlPropInSubSchema, mySchema);
 		assert.isFalse(expectedUsage2Result.valid, 'validateResult should fail');
 
 		//-> this has a typo that didn't show because of type conversion!
@@ -52,7 +52,7 @@ describe("Issue 32", function () {
 		//this.assert(!expectedUsage1Result.valud, 'validateResult should fail');
 
 		// Usage 3
-		var expectedMultipleErrorResult = tv4.validateMultiple(addlPropInSubSchema, mySchema);
+		var expectedMultipleErrorResult = tv5.validateMultiple(addlPropInSubSchema, mySchema);
 		assert.isFalse(expectedMultipleErrorResult.valid, 'validateMultiple should fail');
 		assert.length(expectedMultipleErrorResult.errors, 1, 'validateMultiple should have exactly one error');
 		//this.assert(!expectedMultipleErrorResult.valid, 'validateMultiple should fail');

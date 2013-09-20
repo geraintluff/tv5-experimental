@@ -18,9 +18,9 @@ describe("$ref 05", function () {
 		};
 
 		var data = [0, false];
-		var valid = tv4.validate(data, schema);
+		var valid = tv5.validate(data, schema);
 		assert.isFalse(valid, 'inline addressing invalid 0, false');
-		assert.deepEqual(tv4.error, error, 'errors equal');
+		assert.deepEqual(tv5.error, error, 'errors equal');
 	});
 
 	it("don't trust non sub-paths", function () {
@@ -35,16 +35,16 @@ describe("$ref 05", function () {
 				"type": "boolean"
 			}
 		};
-		tv4.addSchema(examplePath, schema);
+		tv5.addSchema(examplePath, schema);
 		var data = [0, false];
-		var valid = tv4.validate(data, examplePath);
+		var valid = tv5.validate(data, examplePath);
 
-		assert.length(tv4.missing, 1, "should have missing schema");
-		assert.strictEqual(tv4.missing[0], examplePathBase + "/other-schema", "incorrect schema missing: " + tv4.missing[0]);
+		assert.length(tv5.missing, 1, "should have missing schema");
+		assert.strictEqual(tv5.missing[0], examplePathBase + "/other-schema", "incorrect schema missing: " + tv5.missing[0]);
 		assert.isTrue(valid, "should pass, as remote schema not found");
 
-		//this.assert(tv4.missing.length == 1, "should have missing schema");
-		//this.assert(tv4.missing[0] == examplePathBase + "/other-schema", "incorrect schema missing: " + tv4.missing[0]);
+		//this.assert(tv5.missing.length == 1, "should have missing schema");
+		//this.assert(tv5.missing[0] == examplePathBase + "/other-schema", "incorrect schema missing: " + tv5.missing[0]);
 		//this.assert(valid, "should pass, as remote schema not found");
 	});
 });

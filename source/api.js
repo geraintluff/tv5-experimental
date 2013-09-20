@@ -216,15 +216,15 @@ function createApi(language) {
 	return api;
 }
 
-var tv4 = createApi();
-tv4.addLanguage('en-gb', ErrorMessagesDefault);
+var tv5 = createApi();
+tv5.addLanguage('en-gb', ErrorMessagesDefault);
 
 //legacy property
-tv4.tv4 = tv4;
+tv5.tv5 = tv5;
 
 if (typeof module !== 'undefined' && module.exports){
-	module.exports = tv4;
+	module.exports = tv5;
 }
 else {
-	global.tv4 = tv4;
+	global.tv5 = tv5;
 }

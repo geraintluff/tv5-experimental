@@ -4,7 +4,7 @@ describe("$ref 01", function () {
 		var schema = {
 			"items": {"$ref": "#"}
 		};
-		tv4.normSchema(schema);
+		tv5.normSchema(schema);
 		assert.propertyVal(schema.items, '$ref', "#");
 		//return schema.items['$ref'] == "#";
 	});
@@ -14,7 +14,7 @@ describe("$ref 01", function () {
 			"id": "baseUrl",
 			"items": {"$ref": "#"}
 		};
-		tv4.normSchema(schema);
+		tv5.normSchema(schema);
 		assert.propertyVal(schema.items, '$ref', "baseUrl#");
 		//return schema.items['$ref'] == "baseUrl#";
 	});
@@ -29,7 +29,7 @@ describe("$ref 01", function () {
 				}
 			}
 		};
-		tv4.normSchema(schema);
+		tv5.normSchema(schema);
 		assert.strictEqual(schema.items.id, "http://example.com/otherSchema", "schema.items.id");
 		assert.strictEqual(schema.items.items['$ref'], "http://example.com/otherSchema#", "$ref");
 		//this.assert(schema.items.id == "http://example.com/otherSchema", "schema.items.id");
@@ -48,7 +48,7 @@ describe("$ref 01", function () {
 				]
 			}
 		};
-		tv4.normSchema(schema);
+		tv5.normSchema(schema);
 		assert.strictEqual(schema.items['enum'][0]['$ref'], "#");
 		//this.assert(schema.items['enum'][0]['$ref'] == "#");
 	});
@@ -61,8 +61,8 @@ describe("$ref 01", function () {
 			}
 		};
 		var data = {"id": "test", "$ref": "test"};
-		tv4.normSchema(schema);
-		var valid = tv4.validate(data, schema);
+		tv5.normSchema(schema);
+		var valid = tv5.validate(data, schema);
 		assert.isFalse(valid);
 	});
 });

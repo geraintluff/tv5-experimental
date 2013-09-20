@@ -3,14 +3,14 @@ describe("Any types 01", function () {
 	it("enum [1], was 1", function () {
 		var data = 1;
 		var schema = {"enum": [1]};
-		var valid = tv4.validate(data, schema);
+		var valid = tv5.validate(data, schema);
 		assert.isTrue(valid);
 	});
 
 	it("enum [1], was \"1\"", function () {
 		var data = "1";
 		var schema = {"enum": [1]};
-		var valid = tv4.validate(data, schema);
+		var valid = tv5.validate(data, schema);
 		assert.isFalse(valid);
 	});
 
@@ -19,7 +19,7 @@ describe("Any types 01", function () {
 		var schema = {"enum": [
 			{}
 		]};
-		var valid = tv4.validate(data, schema);
+		var valid = tv5.validate(data, schema);
 		assert.isTrue(valid);
 	});
 
@@ -28,7 +28,7 @@ describe("Any types 01", function () {
 		var schema = {"enum": [
 			{"key": "value"}
 		]};
-		var valid = tv4.validate(data, schema);
+		var valid = tv5.validate(data, schema);
 		assert.isFalse(valid);
 	});
 
@@ -37,7 +37,7 @@ describe("Any types 01", function () {
 		var schema = {"enum": [
 			{"key": "value"}
 		]};
-		var valid = tv4.validate(data, schema);
+		var valid = tv5.validate(data, schema);
 		assert.isFalse(valid);
 	});
 
@@ -48,7 +48,7 @@ describe("Any types 01", function () {
 			5,
 			{}
 		]};
-		var valid = tv4.validate(data, schema);
+		var valid = tv5.validate(data, schema);
 		assert.isTrue(valid);
 	});
 
@@ -59,7 +59,7 @@ describe("Any types 01", function () {
 			5,
 			{}
 		]};
-		var valid = tv4.validate(data, schema);
+		var valid = tv5.validate(data, schema);
 		assert.isFalse(valid);
 	});
 
@@ -70,7 +70,7 @@ describe("Any types 01", function () {
 			5,
 			{}
 		]};
-		var valid = tv4.validate(data, schema);
+		var valid = tv5.validate(data, schema);
 		assert.isFalse(valid);
 	});
 });

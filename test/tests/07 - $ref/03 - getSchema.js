@@ -5,8 +5,8 @@ describe("$ref 03", function () {
 		var schema = {
 			"test": "value"
 		};
-		tv4.addSchema(url, schema);
-		var fetched = tv4.getSchema(url);
+		tv5.addSchema(url, schema);
+		var fetched = tv5.getSchema(url);
 		assert.strictEqual(fetched.test, "value");
 		//return fetched.test == "value";
 	});
@@ -16,8 +16,8 @@ describe("$ref 03", function () {
 		var schema = {
 			"test": "value"
 		};
-		tv4.addSchema(url, schema);
-		var fetched = tv4.getSchema(url + "#");
+		tv5.addSchema(url, schema);
+		var fetched = tv5.getSchema(url + "#");
 		assert.strictEqual(fetched.test, "value");
 		//return fetched.test == "value";
 	});
@@ -33,14 +33,14 @@ describe("$ref 03", function () {
 				}
 			}
 		};
-		tv4.addSchema(url, schema);
-		var fetched = tv4.getSchema(url + "#/items/properties/key%5B%5D/inner~1key~0");
+		tv5.addSchema(url, schema);
+		var fetched = tv5.getSchema(url + "#/items/properties/key%5B%5D/inner~1key~0");
 		assert.strictEqual(fetched, "value");
 		//return fetched == "value";
 	});
 
 	it("addSchema(), getSchema() adds referred schemas", function () {
-		tv4 = tv4.freshApi();
+		tv5 = tv5.freshApi();
 
 		var data = [123, true];
 		var valid;
@@ -49,13 +49,13 @@ describe("$ref 03", function () {
 			"type": "array",
 			"items": {"$ref": "http://example.com/schema/sub#item"}
 		};
-		tv4.addSchema(url, schema);
+		tv5.addSchema(url, schema);
 
 		//test missing
-		valid = tv4.validate(data, schema);
+		valid = tv5.validate(data, schema);
 		assert.isTrue(valid);
-		assert.length(tv4.missing, 1);
-		assert.isUndefined(tv4.getSchema('http://example.com/schema/sub'));
+		assert.length(tv5.missing, 1);
+		assert.isUndefined(tv5.getSchema('http://example.com/schema/sub'));
 
 		var item = {
 			"id": "#item",
@@ -68,16 +68,16 @@ describe("$ref 03", function () {
 				"item": item
 			}
 		};
-		tv4.addSchema(sub);
+		tv5.addSchema(sub);
 
 		//added it?
-		assert.equal(tv4.getSchema(url), schema);
-		assert.equal(tv4.getSchema('http://example.com/schema/sub'), sub);
-		assert.equal(tv4.getSchema('http://example.com/schema/sub#item'), item);
+		assert.equal(tv5.getSchema(url), schema);
+		assert.equal(tv5.getSchema('http://example.com/schema/sub'), sub);
+		assert.equal(tv5.getSchema('http://example.com/schema/sub#item'), item);
 
 		//now use it
-		valid = tv4.validate(data, schema);
-		assert.length(tv4.missing, 0);
+		valid = tv5.validate(data, schema);
+		assert.length(tv5.missing, 0);
 		assert.isFalse(valid);
 
 		var error = {
@@ -86,6 +86,6 @@ describe("$ref 03", function () {
 			dataPath: '/0',
 			schemaPath: '/items/type',
 			subErrors: null };
-		assert.deepEqual(tv4.error, error);
+		assert.deepEqual(tv5.error, error);
 	});
 });

@@ -48,7 +48,7 @@ module.exports = function (grunt) {
 		},
 		clean: {
 			tests: ['tmp', 'test/all_concat.js'],
-			build: ['tv4.js', 'tv4.min.js', '*js.map', 'test/all_concat.js', 'test/all_concat.js.map']
+			build: ['tv5.js', 'tv5.min.js', '*js.map', 'test/all_concat.js', 'test/all_concat.js.map']
 		},
 		jshint: {
 			//lint for mistakes
@@ -57,7 +57,7 @@ module.exports = function (grunt) {
 				jshintrc: '.jshintrc'
 			},
 			tests: ['test/tests/**/*.js', 'test/all_*.js'],
-			output: ['./tv4.js']
+			output: ['./tv5.js']
 		},
 		concat_sourcemap: {
 			options: {
@@ -85,7 +85,7 @@ module.exports = function (grunt) {
 					'api.js',
 					'_footer.js'
 				],
-				dest: 'tv4.js'
+				dest: 'tv5.js'
 			},
 			tests: {
 				src: ['test/_header.js', 'test/tests/**/*.js'],
@@ -104,14 +104,14 @@ module.exports = function (grunt) {
 			}
 		},
 		uglify: {
-			tv4: {
+			tv5: {
 				options: {
 					report: 'min',
-					sourceMapIn: 'tv4.js.map',
-					sourceMap: 'tv4.min.js.map'
+					sourceMapIn: 'tv5.js.map',
+					sourceMap: 'tv5.min.js.map'
 				},
 				files: {
-					'tv4.min.js': ['tv4.js']
+					'tv5.min.js': ['tv5.js']
 				}
 			}
 		},
@@ -153,7 +153,7 @@ module.exports = function (grunt) {
 
 	// main cli commands
 	grunt.registerTask('default', ['test']);
-	grunt.registerTask('products', ['uglify:tv4', 'component:build', 'markdown']);
+	grunt.registerTask('products', ['uglify:tv5', 'component:build', 'markdown']);
 	grunt.registerTask('build', ['clean', 'concat_sourcemap', 'jshint', 'products', 'copy:test_deps']);
 	grunt.registerTask('test', ['build', 'mochaTest', 'mocha']);
 

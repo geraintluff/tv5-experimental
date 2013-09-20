@@ -7,7 +7,7 @@ describe("Objects 06", function () {
 				key1: "key2"
 			}
 		};
-		var valid = tv4.validate(data, schema);
+		var valid = tv5.validate(data, schema);
 		assert.isTrue(valid);
 	});
 
@@ -18,7 +18,7 @@ describe("Objects 06", function () {
 				key1: "key2"
 			}
 		};
-		var valid = tv4.validate(data, schema);
+		var valid = tv5.validate(data, schema);
 		assert.isFalse(valid);
 	});
 
@@ -29,7 +29,7 @@ describe("Objects 06", function () {
 				key1: ["key2"]
 			}
 		};
-		var valid = tv4.validate(data, schema);
+		var valid = tv5.validate(data, schema);
 		assert.isTrue(valid);
 	});
 
@@ -40,7 +40,7 @@ describe("Objects 06", function () {
 				key1: ["key2"]
 			}
 		};
-		var valid = tv4.validate(data, schema);
+		var valid = tv5.validate(data, schema);
 		assert.isFalse(valid);
 	});
 
@@ -55,7 +55,7 @@ describe("Objects 06", function () {
 				}
 			}
 		};
-		var valid = tv4.validate(data, schema);
+		var valid = tv5.validate(data, schema);
 		assert.isTrue(valid);
 	});
 
@@ -70,7 +70,7 @@ describe("Objects 06", function () {
 				}
 			}
 		};
-		var valid = tv4.validate(data, schema);
+		var valid = tv5.validate(data, schema);
 		assert.isFalse(valid);
 	});
 });

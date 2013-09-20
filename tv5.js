@@ -106,7 +106,7 @@ if (!Array.prototype.indexOf) {
 // Grungey Object.isFrozen hack
 if (!Object.isFrozen) {
 	Object.isFrozen = function (obj) {
-		var key = "tv4_test_frozen_key";
+		var key = "tv5_test_frozen_key";
 		while (obj.hasOwnProperty(key)) {
 			key += Math.random();
 		}
@@ -132,7 +132,7 @@ var ValidatorContext = function ValidatorContext(parent, collectMultiple, errorM
 		this.scanned = [];
 		this.scannedFrozen = [];
 		this.scannedFrozenSchemas = [];
-		this.key = 'tv4_validation_id';
+		this.key = 'tv5_validation_id';
 	}
 	this.errorMessages = errorMessages;
 };
@@ -1130,19 +1130,19 @@ function createApi(language) {
 	return api;
 }
 
-var tv4 = createApi();
-tv4.addLanguage('en-gb', ErrorMessagesDefault);
+var tv5 = createApi();
+tv5.addLanguage('en-gb', ErrorMessagesDefault);
 
 //legacy property
-tv4.tv4 = tv4;
+tv5.tv5 = tv5;
 
 if (typeof module !== 'undefined' && module.exports){
-	module.exports = tv4;
+	module.exports = tv5;
 }
 else {
-	global.tv4 = tv4;
+	global.tv5 = tv5;
 }
 
 })(this);
 
-//@ sourceMappingURL=tv4.js.map
+//@ sourceMappingURL=tv5.js.map

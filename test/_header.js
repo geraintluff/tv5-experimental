@@ -1,12 +1,12 @@
 "use strict";
 
 //need to declare these for node and modern browsers
-var tv4;
+var tv5;
 var assert;
 
 if (typeof process === 'object' && typeof process.cwd !== 'undefined') {
 	// NodeJS
-	tv4 = require('./../').tv4;
+	tv5 = require('./../').tv5;
 	assert = require('proclaim');
 	require('source-map-support').install();
 
@@ -61,12 +61,12 @@ if (typeof process === 'object' && typeof process.cwd !== 'undefined') {
 else if (typeof window !== 'undefined') {
 	// import for browser, use from IE7/8 global bypass
 	assert = window.refs.assert;
-	tv4 = window.refs.tv4;
+	tv5 = window.refs.tv5;
 }
 
 //check if we got everything
-if (!tv4) {
-	throw new Error('tv4 not found');
+if (!tv5) {
+	throw new Error('tv5 not found');
 }
 if (!assert) {
 	throw new Error('proclaim not found');
@@ -78,7 +78,7 @@ helper.dumpJSON = function (value) {
 
 
 beforeEach(function () {
-	tv4 = tv4.freshApi();
+	tv5 = tv5.freshApi();
 });
 
 

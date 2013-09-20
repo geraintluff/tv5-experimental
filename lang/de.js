@@ -1,4 +1,4 @@
-tv4.addLanguage('de',  {
+tv5.addLanguage('de',  {
     INVALID_TYPE: "Ungültiger Typ: {type} (erwartet wurde: {expected})",
     ENUM_MISMATCH: "Keine Übereinstimmung mit der Aufzählung (enum) für: {value}",
     ANY_OF_MISSING: "Daten stimmen nicht überein mit einem der Schemas von \"anyOf\"",

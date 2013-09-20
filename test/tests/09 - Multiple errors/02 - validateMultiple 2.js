@@ -54,7 +54,7 @@ describe("Multiple errors 02", function () {
 				}
 			}
 		};
-		var result = tv4.validateMultiple(data, schema);
+		var result = tv5.validateMultiple(data, schema);
 
 		assert.isTrue(result.valid, "data should be valid");
 		assert.length(result.errors, 0, "should have no errors");

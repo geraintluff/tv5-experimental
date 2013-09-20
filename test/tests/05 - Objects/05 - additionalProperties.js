@@ -11,7 +11,7 @@ describe("Objects 05", function () {
 			},
 			additionalProperties: {"type": "string"}
 		};
-		var valid = tv4.validate(data, schema);
+		var valid = tv5.validate(data, schema);
 		assert.isTrue(valid);
 	});
 
@@ -26,7 +26,7 @@ describe("Objects 05", function () {
 			},
 			additionalProperties: {"type": "string"}
 		};
-		var valid = tv4.validate(data, schema);
+		var valid = tv5.validate(data, schema);
 		assert.isFalse(valid);
 	});
 
@@ -41,7 +41,7 @@ describe("Objects 05", function () {
 			},
 			additionalProperties: true
 		};
-		var valid = tv4.validate(data, schema);
+		var valid = tv5.validate(data, schema);
 		assert.isTrue(valid);
 	});
 
@@ -56,7 +56,7 @@ describe("Objects 05", function () {
 			},
 			additionalProperties: false
 		};
-		var valid = tv4.validate(data, schema);
+		var valid = tv5.validate(data, schema);
 		assert.isFalse(valid);
 	});
 });

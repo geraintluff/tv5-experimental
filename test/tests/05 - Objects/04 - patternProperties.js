@@ -10,7 +10,7 @@ describe("Objects 04", function () {
 				"^int": {minimum: 0}
 			}
 		};
-		var valid = tv4.validate(data, schema);
+		var valid = tv5.validate(data, schema);
 		assert.isTrue(valid);
 	});
 
@@ -24,7 +24,7 @@ describe("Objects 04", function () {
 				"^int": {"type": "integer"}
 			}
 		};
-		var valid = tv4.validate(data, schema);
+		var valid = tv5.validate(data, schema);
 		assert.isFalse(valid);
 	});
 
@@ -38,7 +38,7 @@ describe("Objects 04", function () {
 				"^int": {"type": "integer"}
 			}
 		};
-		var valid = tv4.validate(data, schema);
+		var valid = tv5.validate(data, schema);
 		assert.isFalse(valid);
 	});
 });
