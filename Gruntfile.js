@@ -81,6 +81,7 @@ module.exports = function (grunt) {
 					'object.js',
 					'combinations.js',
 					'resolve-uri.js',
+					'relative-json-pointer.js',
 					'normalise-schema.js',
 					'api.js',
 					'_footer.js'

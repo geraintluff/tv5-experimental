@@ -294,7 +294,7 @@ ValidatorContext.prototype.reset = function () {
 	this.errors = [];
 };
 
-ValidatorContext.prototype.validateAll = function (data, schema, dataPathParts, schemaPathParts) {
+ValidatorContext.prototype.validateAll = function (data, schema, dataPathParts, schemaPathParts, dataContext) {
 	var topLevel;
 	if (schema['$ref'] !== undefined) {
 		schema = this.getSchema(schema['$ref']);
@@ -336,13 +336,13 @@ ValidatorContext.prototype.validateAll = function (data, schema, dataPathParts, 
 	}
 
 	var errorCount = this.errors.length;
-	var error = this.validateBasic(data, schema)
-		|| this.validateNumeric(data, schema)
-		|| this.validateString(data, schema)
-		|| this.validateArray(data, schema)
-		|| this.validateObject(data, schema)
-		|| this.validateCombinations(data, schema)
-		|| this.validateFormat(data, schema)
+	var error = this.validateBasic(data, schema, dataContext)
+		|| this.validateNumeric(data, schema, dataContext)
+		|| this.validateString(data, schema, dataContext)
+		|| this.validateArray(data, schema, dataContext)
+		|| this.validateObject(data, schema, dataContext)
+		|| this.validateCombinations(data, schema, dataContext)
+		|| this.validateFormat(data, schema, dataContext)
 		|| null;
 
 	if (topLevel) {
@@ -367,17 +367,44 @@ ValidatorContext.prototype.validateAll = function (data, schema, dataPathParts, 
 
 	return this.handleError(error);
 };
-ValidatorContext.prototype.validateFormat = function (data, schema) {
-	if (typeof schema.format !== 'string' || !this.formatValidators[schema.format]) {
+ValidatorContext.prototype.validateFormat = function (data, schema, dataContext) {
+	var format = dataContext.schemaValue(schema.format);
+	if (typeof format !== 'string' || !this.formatValidators[format]) {
 		return null;
 	}
-	var errorMessage = this.formatValidators[schema.format].call(null, data, schema);
+	var errorMessage = this.formatValidators[format].call(null, data, schema);
 	if (typeof errorMessage === 'string' || typeof errorMessage === 'number') {
 		return this.createError(ErrorCodes.FORMAT_CUSTOM, {message: errorMessage}).prefixWith(null, "format");
 	} else if (errorMessage && typeof errorMessage === 'object') {
 		return this.createError(ErrorCodes.FORMAT_CUSTOM, {message: errorMessage.message || "?"}, errorMessage.dataPath || null, errorMessage.schemaPath || "/format");
 	}
 	return null;
+};
+
+function DataContext(document, pointer) {
+	this.document = document;
+	this.pointer = pointer || "";
+}
+DataContext.prototype = {
+	add: function (keyOrIndex) {
+		var suffix = "/" + RelativeJsonPointer.encodeComponent("" + keyOrIndex);
+		return new DataContext(this.document, this.pointer + suffix);
+	},
+	getValue: function (pointer) {
+		try {
+			return RelativeJsonPointer.resolve([this.pointer, pointer], this.document);
+		} catch (e) {
+			// TODO: this is terrible
+			console.log(e);
+			return undefined;
+		}
+	},
+	schemaValue: function (schemaValue) {
+		if (schemaValue && schemaValue['$data'] !== undefined) {
+			return this.getValue(schemaValue['$data']);
+		}
+		return schemaValue;
+	}
 };
 
 function recursiveCompare(A, B) {
@@ -419,19 +446,20 @@ function recursiveCompare(A, B) {
 	return false;
 }
 
-ValidatorContext.prototype.validateBasic = function validateBasic(data, schema) {
+ValidatorContext.prototype.validateBasic = function validateBasic(data, schema, dataContext) {
 	var error;
-	if (error = this.validateType(data, schema)) {
+	if (error = this.validateType(data, schema, dataContext)) {
 		return error.prefixWith(null, "type");
 	}
-	if (error = this.validateEnum(data, schema)) {
+	if (error = this.validateEnum(data, schema, dataContext)) {
 		return error.prefixWith(null, "type");
 	}
 	return null;
 };
 
-ValidatorContext.prototype.validateType = function validateType(data, schema) {
-	if (schema.type === undefined) {
+ValidatorContext.prototype.validateType = function validateType(data, schema, dataContext) {
+	var allowedTypes = dataContext.schemaValue(schema.type);
+	if (allowedTypes === undefined) {
 		return null;
 	}
 	var dataType = typeof data;
@@ -440,7 +468,6 @@ ValidatorContext.prototype.validateType = function validateType(data, schema) {
 	} else if (Array.isArray(data)) {
 		dataType = "array";
 	}
-	var allowedTypes = schema.type;
 	if (typeof allowedTypes !== "object") {
 		allowedTypes = [allowedTypes];
 	}
@@ -454,12 +481,13 @@ ValidatorContext.prototype.validateType = function validateType(data, schema) {
 	return this.createError(ErrorCodes.INVALID_TYPE, {type: dataType, expected: allowedTypes.join("/")});
 };
 
-ValidatorContext.prototype.validateEnum = function validateEnum(data, schema) {
-	if (schema["enum"] === undefined) {
+ValidatorContext.prototype.validateEnum = function validateEnum(data, schema, dataContext) {
+	var enumValues = dataContext.schemaValue(schema['enum']);
+	if (enumValues === undefined) {
 		return null;
 	}
-	for (var i = 0; i < schema["enum"].length; i++) {
-		var enumVal = schema["enum"][i];
+	for (var i = 0; i < enumValues.length; i++) {
+		var enumVal = enumValues[i];
 		if (recursiveCompare(data, enumVal)) {
 			return null;
 		}
@@ -467,14 +495,14 @@ ValidatorContext.prototype.validateEnum = function validateEnum(data, schema) {
 	return this.createError(ErrorCodes.ENUM_MISMATCH, {value: (typeof JSON !== 'undefined') ? JSON.stringify(data) : data});
 };
 
-ValidatorContext.prototype.validateNumeric = function validateNumeric(data, schema) {
-	return this.validateMultipleOf(data, schema)
-		|| this.validateMinMax(data, schema)
+ValidatorContext.prototype.validateNumeric = function validateNumeric(data, schema, dataContext) {
+	return this.validateMultipleOf(data, schema, dataContext)
+		|| this.validateMinMax(data, schema, dataContext)
 		|| null;
 };
 
-ValidatorContext.prototype.validateMultipleOf = function validateMultipleOf(data, schema) {
-	var multipleOf = schema.multipleOf || schema.divisibleBy;
+ValidatorContext.prototype.validateMultipleOf = function validateMultipleOf(data, schema, dataContext) {
+	var multipleOf = dataContext.schemaValue(schema.multipleOf || schema.divisibleBy);
 	if (multipleOf === undefined) {
 		return null;
 	}
@@ -486,85 +514,92 @@ ValidatorContext.prototype.validateMultipleOf = function validateMultipleOf(data
 	return null;
 };
 
-ValidatorContext.prototype.validateMinMax = function validateMinMax(data, schema) {
+ValidatorContext.prototype.validateMinMax = function validateMinMax(data, schema, dataContext) {
 	if (typeof data !== "number") {
 		return null;
 	}
-	if (schema.minimum !== undefined) {
-		if (data < schema.minimum) {
-			return this.createError(ErrorCodes.NUMBER_MINIMUM, {value: data, minimum: schema.minimum}).prefixWith(null, "minimum");
+	var minimum = dataContext.schemaValue(schema.minimum);
+	var maximum = dataContext.schemaValue(schema.maximum);
+	if (minimum !== undefined) {
+		if (data < minimum) {
+			return this.createError(ErrorCodes.NUMBER_MINIMUM, {value: data, minimum: minimum}).prefixWith(null, "minimum");
 		}
-		if (schema.exclusiveMinimum && data === schema.minimum) {
-			return this.createError(ErrorCodes.NUMBER_MINIMUM_EXCLUSIVE, {value: data, minimum: schema.minimum}).prefixWith(null, "exclusiveMinimum");
+		if (schema.exclusiveMinimum && data === minimum) {
+			return this.createError(ErrorCodes.NUMBER_MINIMUM_EXCLUSIVE, {value: data, minimum: minimum}).prefixWith(null, "exclusiveMinimum");
 		}
 	}
-	if (schema.maximum !== undefined) {
-		if (data > schema.maximum) {
-			return this.createError(ErrorCodes.NUMBER_MAXIMUM, {value: data, maximum: schema.maximum}).prefixWith(null, "maximum");
+	if (maximum !== undefined) {
+		if (data > maximum) {
+			return this.createError(ErrorCodes.NUMBER_MAXIMUM, {value: data, maximum: maximum}).prefixWith(null, "maximum");
 		}
-		if (schema.exclusiveMaximum && data === schema.maximum) {
-			return this.createError(ErrorCodes.NUMBER_MAXIMUM_EXCLUSIVE, {value: data, maximum: schema.maximum}).prefixWith(null, "exclusiveMaximum");
+		if (schema.exclusiveMaximum && data === maximum) {
+			return this.createError(ErrorCodes.NUMBER_MAXIMUM_EXCLUSIVE, {value: data, maximum: maximum}).prefixWith(null, "exclusiveMaximum");
 		}
 	}
 	return null;
 };
 
-ValidatorContext.prototype.validateString = function validateString(data, schema) {
-	return this.validateStringLength(data, schema)
-		|| this.validateStringPattern(data, schema)
+ValidatorContext.prototype.validateString = function validateString(data, schema, dataContext) {
+	return this.validateStringLength(data, schema, dataContext)
+		|| this.validateStringPattern(data, schema, dataContext)
 		|| null;
 };
 
-ValidatorContext.prototype.validateStringLength = function validateStringLength(data, schema) {
+ValidatorContext.prototype.validateStringLength = function validateStringLength(data, schema, dataContext) {
 	if (typeof data !== "string") {
 		return null;
 	}
-	if (schema.minLength !== undefined) {
-		if (data.length < schema.minLength) {
-			return this.createError(ErrorCodes.STRING_LENGTH_SHORT, {length: data.length, minimum: schema.minLength}).prefixWith(null, "minLength");
+	var minLength = dataContext.schemaValue(schema.minLength);
+	var maxLength = dataContext.schemaValue(schema.maxLength);
+	if (minLength !== undefined) {
+		if (data.length < minLength) {
+			return this.createError(ErrorCodes.STRING_LENGTH_SHORT, {length: data.length, minimum: minLength}).prefixWith(null, "minLength");
 		}
 	}
-	if (schema.maxLength !== undefined) {
-		if (data.length > schema.maxLength) {
-			return this.createError(ErrorCodes.STRING_LENGTH_LONG, {length: data.length, maximum: schema.maxLength}).prefixWith(null, "maxLength");
+	if (maxLength !== undefined) {
+		if (data.length > maxLength) {
+			return this.createError(ErrorCodes.STRING_LENGTH_LONG, {length: data.length, maximum: maxLength}).prefixWith(null, "maxLength");
 		}
 	}
 	return null;
 };
 
-ValidatorContext.prototype.validateStringPattern = function validateStringPattern(data, schema) {
+ValidatorContext.prototype.validateStringPattern = function validateStringPattern(data, schema, dataContext) {
 	if (typeof data !== "string" || schema.pattern === undefined) {
 		return null;
 	}
-	var regexp = new RegExp(schema.pattern);
+	var pattern = dataContext.schemaValue(schema.pattern);
+	var regexp = new RegExp(pattern);
 	if (!regexp.test(data)) {
-		return this.createError(ErrorCodes.STRING_PATTERN, {pattern: schema.pattern}).prefixWith(null, "pattern");
+		return this.createError(ErrorCodes.STRING_PATTERN, {pattern: pattern}).prefixWith(null, "pattern");
 	}
 	return null;
 };
-ValidatorContext.prototype.validateArray = function validateArray(data, schema) {
+ValidatorContext.prototype.validateArray = function validateArray(data, schema, dataContext) {
 	if (!Array.isArray(data)) {
 		return null;
 	}
-	return this.validateArrayLength(data, schema)
-		|| this.validateArrayUniqueItems(data, schema)
-		|| this.validateArrayItems(data, schema)
+	return this.validateArrayLength(data, schema, dataContext)
+		|| this.validateArrayUniqueItems(data, schema, dataContext)
+		|| this.validateArrayItems(data, schema, dataContext)
 		|| null;
 };
 
-ValidatorContext.prototype.validateArrayLength = function validateArrayLength(data, schema) {
+ValidatorContext.prototype.validateArrayLength = function validateArrayLength(data, schema, dataContext) {
 	var error;
-	if (schema.minItems !== undefined) {
-		if (data.length < schema.minItems) {
-			error = (this.createError(ErrorCodes.ARRAY_LENGTH_SHORT, {length: data.length, minimum: schema.minItems})).prefixWith(null, "minItems");
+	var minItems = dataContext.schemaValue(schema.minItems);
+	var maxItems = dataContext.schemaValue(schema.maxItems);
+	if (minItems !== undefined) {
+		if (data.length < minItems) {
+			error = (this.createError(ErrorCodes.ARRAY_LENGTH_SHORT, {length: data.length, minimum: minItems})).prefixWith(null, "minItems");
 			if (this.handleError(error)) {
 				return error;
 			}
 		}
 	}
-	if (schema.maxItems !== undefined) {
-		if (data.length > schema.maxItems) {
-			error = (this.createError(ErrorCodes.ARRAY_LENGTH_LONG, {length: data.length, maximum: schema.maxItems})).prefixWith(null, "maxItems");
+	if (maxItems !== undefined) {
+		if (data.length > maxItems) {
+			error = (this.createError(ErrorCodes.ARRAY_LENGTH_LONG, {length: data.length, maximum: maxItems})).prefixWith(null, "maxItems");
 			if (this.handleError(error)) {
 				return error;
 			}
@@ -573,8 +608,9 @@ ValidatorContext.prototype.validateArrayLength = function validateArrayLength(da
 	return null;
 };
 
-ValidatorContext.prototype.validateArrayUniqueItems = function validateArrayUniqueItems(data, schema) {
-	if (schema.uniqueItems) {
+ValidatorContext.prototype.validateArrayUniqueItems = function validateArrayUniqueItems(data, schema, dataContext) {
+	var uniqueItems = dataContext.schemaValue(schema.uniqueItems);
+	if (uniqueItems) {
 		for (var i = 0; i < data.length; i++) {
 			for (var j = i + 1; j < data.length; j++) {
 				if (recursiveCompare(data[i], data[j])) {
@@ -589,7 +625,7 @@ ValidatorContext.prototype.validateArrayUniqueItems = function validateArrayUniq
 	return null;
 };
 
-ValidatorContext.prototype.validateArrayItems = function validateArrayItems(data, schema) {
+ValidatorContext.prototype.validateArrayItems = function validateArrayItems(data, schema, dataContext) {
 	if (schema.items === undefined) {
 		return null;
 	}
@@ -597,7 +633,7 @@ ValidatorContext.prototype.validateArrayItems = function validateArrayItems(data
 	if (Array.isArray(schema.items)) {
 		for (i = 0; i < data.length; i++) {
 			if (i < schema.items.length) {
-				if (error = this.validateAll(data[i], schema.items[i], [i], ["items", i])) {
+				if (error = this.validateAll(data[i], schema.items[i], [i], ["items", i], dataContext.add(i))) {
 					return error;
 				}
 			} else if (schema.additionalItems !== undefined) {
@@ -608,14 +644,14 @@ ValidatorContext.prototype.validateArrayItems = function validateArrayItems(data
 							return error;
 						}
 					}
-				} else if (error = this.validateAll(data[i], schema.additionalItems, [i], ["additionalItems"])) {
+				} else if (error = this.validateAll(data[i], schema.additionalItems, [i], ["additionalItems"], dataContext.add(i))) {
 					return error;
 				}
 			}
 		}
 	} else {
 		for (i = 0; i < data.length; i++) {
-			if (error = this.validateAll(data[i], schema.items, [i], ["items"])) {
+			if (error = this.validateAll(data[i], schema.items, [i], ["items"], dataContext.add(i))) {
 				return error;
 			}
 		}
@@ -623,31 +659,33 @@ ValidatorContext.prototype.validateArrayItems = function validateArrayItems(data
 	return null;
 };
 
-ValidatorContext.prototype.validateObject = function validateObject(data, schema) {
+ValidatorContext.prototype.validateObject = function validateObject(data, schema, dataContext) {
 	if (typeof data !== "object" || data === null || Array.isArray(data)) {
 		return null;
 	}
-	return this.validateObjectMinMaxProperties(data, schema)
-		|| this.validateObjectRequiredProperties(data, schema)
-		|| this.validateObjectProperties(data, schema)
-		|| this.validateObjectDependencies(data, schema)
+	return this.validateObjectMinMaxProperties(data, schema, dataContext)
+		|| this.validateObjectRequiredProperties(data, schema, dataContext)
+		|| this.validateObjectProperties(data, schema, dataContext)
+		|| this.validateObjectDependencies(data, schema, dataContext)
 		|| null;
 };
 
-ValidatorContext.prototype.validateObjectMinMaxProperties = function validateObjectMinMaxProperties(data, schema) {
+ValidatorContext.prototype.validateObjectMinMaxProperties = function validateObjectMinMaxProperties(data, schema, dataContext) {
 	var keys = Object.keys(data);
 	var error;
-	if (schema.minProperties !== undefined) {
-		if (keys.length < schema.minProperties) {
-			error = this.createError(ErrorCodes.OBJECT_PROPERTIES_MINIMUM, {propertyCount: keys.length, minimum: schema.minProperties}).prefixWith(null, "minProperties");
+	var minProperties = dataContext.schemaValue(schema.minProperties);
+	var maxProperties = dataContext.schemaValue(schema.maxProperties);
+	if (minProperties !== undefined) {
+		if (keys.length < minProperties) {
+			error = this.createError(ErrorCodes.OBJECT_PROPERTIES_MINIMUM, {propertyCount: keys.length, minimum: minProperties}).prefixWith(null, "minProperties");
 			if (this.handleError(error)) {
 				return error;
 			}
 		}
 	}
-	if (schema.maxProperties !== undefined) {
-		if (keys.length > schema.maxProperties) {
-			error = this.createError(ErrorCodes.OBJECT_PROPERTIES_MAXIMUM, {propertyCount: keys.length, maximum: schema.maxProperties}).prefixWith(null, "maxProperties");
+	if (maxProperties !== undefined) {
+		if (keys.length > maxProperties) {
+			error = this.createError(ErrorCodes.OBJECT_PROPERTIES_MAXIMUM, {propertyCount: keys.length, maximum: maxProperties}).prefixWith(null, "maxProperties");
 			if (this.handleError(error)) {
 				return error;
 			}
@@ -656,10 +694,11 @@ ValidatorContext.prototype.validateObjectMinMaxProperties = function validateObj
 	return null;
 };
 
-ValidatorContext.prototype.validateObjectRequiredProperties = function validateObjectRequiredProperties(data, schema) {
-	if (schema.required !== undefined) {
-		for (var i = 0; i < schema.required.length; i++) {
-			var key = schema.required[i];
+ValidatorContext.prototype.validateObjectRequiredProperties = function validateObjectRequiredProperties(data, schema, dataContext) {
+	var required = dataContext.schemaValue(schema.required);
+	if (required !== undefined) {
+		for (var i = 0; i < required.length; i++) {
+			var key = required[i];
 			if (data[key] === undefined) {
 				var error = this.createError(ErrorCodes.OBJECT_REQUIRED, {key: key}).prefixWith(null, "" + i).prefixWith(null, "required");
 				if (this.handleError(error)) {
@@ -671,13 +710,13 @@ ValidatorContext.prototype.validateObjectRequiredProperties = function validateO
 	return null;
 };
 
-ValidatorContext.prototype.validateObjectProperties = function validateObjectProperties(data, schema) {
+ValidatorContext.prototype.validateObjectProperties = function validateObjectProperties(data, schema, dataContext) {
 	var error;
 	for (var key in data) {
 		var foundMatch = false;
 		if (schema.properties !== undefined && schema.properties[key] !== undefined) {
 			foundMatch = true;
-			if (error = this.validateAll(data[key], schema.properties[key], [key], ["properties", key])) {
+			if (error = this.validateAll(data[key], schema.properties[key], [key], ["properties", key], dataContext.add(key))) {
 				return error;
 			}
 		}
@@ -686,7 +725,7 @@ ValidatorContext.prototype.validateObjectProperties = function validateObjectPro
 				var regexp = new RegExp(patternKey);
 				if (regexp.test(key)) {
 					foundMatch = true;
-					if (error = this.validateAll(data[key], schema.patternProperties[patternKey], [key], ["patternProperties", patternKey])) {
+					if (error = this.validateAll(data[key], schema.patternProperties[patternKey], [key], ["patternProperties", patternKey], dataContext.add(key))) {
 						return error;
 					}
 				}
@@ -701,7 +740,7 @@ ValidatorContext.prototype.validateObjectProperties = function validateObjectPro
 					}
 				}
 			} else {
-				if (error = this.validateAll(data[key], schema.additionalProperties, [key], ["additionalProperties"])) {
+				if (error = this.validateAll(data[key], schema.additionalProperties, [key], ["additionalProperties"], dataContext.add(key))) {
 					return error;
 				}
 			}
@@ -710,7 +749,7 @@ ValidatorContext.prototype.validateObjectProperties = function validateObjectPro
 	return null;
 };
 
-ValidatorContext.prototype.validateObjectDependencies = function validateObjectDependencies(data, schema) {
+ValidatorContext.prototype.validateObjectDependencies = function validateObjectDependencies(data, schema, dataContext) {
 	var error;
 	if (schema.dependencies !== undefined) {
 		for (var depKey in schema.dependencies) {
@@ -734,7 +773,7 @@ ValidatorContext.prototype.validateObjectDependencies = function validateObjectD
 						}
 					}
 				} else {
-					if (error = this.validateAll(data, dep, [], ["dependencies", depKey])) {
+					if (error = this.validateAll(data, dep, [], ["dependencies", depKey], dataContext)) {
 						return error;
 					}
 				}
@@ -744,29 +783,29 @@ ValidatorContext.prototype.validateObjectDependencies = function validateObjectD
 	return null;
 };
 
-ValidatorContext.prototype.validateCombinations = function validateCombinations(data, schema) {
-	return this.validateAllOf(data, schema)
-		|| this.validateAnyOf(data, schema)
-		|| this.validateOneOf(data, schema)
-		|| this.validateNot(data, schema)
+ValidatorContext.prototype.validateCombinations = function validateCombinations(data, schema, dataContext) {
+	return this.validateAllOf(data, schema, dataContext)
+		|| this.validateAnyOf(data, schema, dataContext)
+		|| this.validateOneOf(data, schema, dataContext)
+		|| this.validateNot(data, schema, dataContext)
 		|| null;
 };
 
-ValidatorContext.prototype.validateAllOf = function validateAllOf(data, schema) {
+ValidatorContext.prototype.validateAllOf = function validateAllOf(data, schema, dataContext) {
 	if (schema.allOf === undefined) {
 		return null;
 	}
 	var error;
 	for (var i = 0; i < schema.allOf.length; i++) {
 		var subSchema = schema.allOf[i];
-		if (error = this.validateAll(data, subSchema, [], ["allOf", i])) {
+		if (error = this.validateAll(data, subSchema, [], ["allOf", i], dataContext)) {
 			return error;
 		}
 	}
 	return null;
 };
 
-ValidatorContext.prototype.validateAnyOf = function validateAnyOf(data, schema) {
+ValidatorContext.prototype.validateAnyOf = function validateAnyOf(data, schema, dataContext) {
 	if (schema.anyOf === undefined) {
 		return null;
 	}
@@ -776,7 +815,7 @@ ValidatorContext.prototype.validateAnyOf = function validateAnyOf(data, schema) 
 		var subSchema = schema.anyOf[i];
 
 		var errorCount = this.errors.length;
-		var error = this.validateAll(data, subSchema, [], ["anyOf", i]);
+		var error = this.validateAll(data, subSchema, [], ["anyOf", i], dataContext);
 
 		if (error === null && errorCount === this.errors.length) {
 			this.errors = this.errors.slice(0, startErrorCount);
@@ -791,7 +830,7 @@ ValidatorContext.prototype.validateAnyOf = function validateAnyOf(data, schema) 
 	return this.createError(ErrorCodes.ANY_OF_MISSING, {}, "", "/anyOf", errors);
 };
 
-ValidatorContext.prototype.validateOneOf = function validateOneOf(data, schema) {
+ValidatorContext.prototype.validateOneOf = function validateOneOf(data, schema, dataContext) {
 	if (schema.oneOf === undefined) {
 		return null;
 	}
@@ -802,7 +841,7 @@ ValidatorContext.prototype.validateOneOf = function validateOneOf(data, schema) 
 		var subSchema = schema.oneOf[i];
 
 		var errorCount = this.errors.length;
-		var error = this.validateAll(data, subSchema, [], ["oneOf", i]);
+		var error = this.validateAll(data, subSchema, [], ["oneOf", i], dataContext);
 
 		if (error === null && errorCount === this.errors.length) {
 			if (validIndex === null) {
@@ -825,12 +864,12 @@ ValidatorContext.prototype.validateOneOf = function validateOneOf(data, schema) 
 	return null;
 };
 
-ValidatorContext.prototype.validateNot = function validateNot(data, schema) {
+ValidatorContext.prototype.validateNot = function validateNot(data, schema, dataContext) {
 	if (schema.not === undefined) {
 		return null;
 	}
 	var oldErrorCount = this.errors.length;
-	var error = this.validateAll(data, schema.not);
+	var error = this.validateAll(data, schema.not, null, null, dataContext);
 	var notErrors = this.errors.slice(oldErrorCount);
 	this.errors = this.errors.slice(0, oldErrorCount);
 	if (error === null && notErrors.length === 0) {
@@ -888,6 +927,74 @@ function resolveUrl(base, href) {// RFC 3986
 function getDocumentUri(uri) {
 	return uri.split('#')[0];
 }
+var RelativeJsonPointer = {
+	encodeComponent: function (part) {
+		return part.replace(/~/g, '~0').replace(/\//g, '~1');
+	},
+	decodeComponent: function (part) {
+		return part.replace(/~1/g, '/').replace(/~0/g, '~');
+	},
+	resolveAbsolute: function (parts, data) {
+		if (typeof parts === 'string') {
+			parts = parts.split('/');
+			if (parts.shift() !== '') {
+				throw new Error("Absolute pointer must start with '/' (or be empty)");
+			}
+		}
+		while (parts.length > 0) {
+			var key = this.decodeComponent(parts.shift());
+			if (!data || typeof data !== 'object') {
+				return undefined;
+			} else if (Array.isArray(data) && !/^[1-9][0-9]*$/.test(key)) {
+				throw new Error("Cannot access object property of array data");
+			}
+			data = data[key];
+		}
+		return data;
+	},
+	resolve: function (pointerSequence, data) {
+		if (typeof pointerSequence !== 'object') {
+			pointerSequence = [pointerSequence];
+		}
+		var parts = [];
+		
+		while (pointerSequence.length > 0) {
+			var pointer = pointerSequence.shift();
+			var leadingDigits = pointer.match(/^[0-9]*/)[0];
+			var upSteps = (leadingDigits === '') ? 0 : parseInt(leadingDigits, 10);
+			if (upSteps > parts.length) {
+				throw new Error("Relative pointer goes up too far: " + pointer);
+			}
+			parts = parts.slice(0, parts.length - upSteps);
+			pointer = pointer.substring(leadingDigits.length);
+			
+			if (pointer === "#") {
+				if (pointerSequence.length > 0) {
+					throw new Error("Only the last pointer can be a key/index reference");
+				} else if (parts.length === 0) {
+					throw new Error("Cannot access key/index of top level data");
+				}
+				var key = this.decodeComponent(parts.pop());
+				var parentData = this.resolveAbsolute(parts, data);
+				if (Array.isArray(parentData)) {
+					if (!/^[1-9][0-9]*$/.test(key)) {
+						throw new Error("Cannot access object property of array data");
+					}
+					return parseInt(key, 10);
+				}
+				return key;
+			}
+			
+			var relativeParts = pointer.split('/');
+			if (relativeParts.shift() !== '') {
+				throw new Error("Pointer must start with '/' (or be empty): " + pointer);
+			}
+			parts = parts.concat(relativeParts);
+		}
+		
+		return this.resolveAbsolute(parts, data);
+	}
+};
 function normSchema(schema, baseUri) {
 	if (baseUri === undefined) {
 		baseUri = schema.id;
@@ -904,7 +1011,7 @@ function normSchema(schema, baseUri) {
 			schema['$ref'] = resolveUrl(baseUri, schema['$ref']);
 		} else {
 			for (var key in schema) {
-				if (key !== "enum") {
+				if (key !== "enum" && key !== "$data") {
 					normSchema(schema[key], baseUri);
 				}
 			}
@@ -941,7 +1048,9 @@ var ErrorCodes = {
 	ARRAY_UNIQUE: 402,
 	ARRAY_ADDITIONAL_ITEMS: 403,
 	// Format errors
-	FORMAT_CUSTOM: 500
+	FORMAT_CUSTOM: 500,
+	// Data-reference errors
+	DATA_PATH_ERROR: 600
 };
 var ErrorMessagesDefault = {
 	INVALID_TYPE: "invalid type: {type} (expected {expected})",
@@ -972,7 +1081,8 @@ var ErrorMessagesDefault = {
 	ARRAY_UNIQUE: "Array items are not unique (indices {match1} and {match2})",
 	ARRAY_ADDITIONAL_ITEMS: "Additional items not allowed",
 	// Format errors
-	FORMAT_CUSTOM: "Format validation failed ({message})"
+	FORMAT_CUSTOM: "Format validation failed ({message})",
+	DATA_PATH_ERROR: "Data path error ({message})"
 };
 
 function ValidationError(code, message, dataPath, schemaPath, subErrors) {
@@ -988,11 +1098,11 @@ function ValidationError(code, message, dataPath, schemaPath, subErrors) {
 ValidationError.prototype = new Error();
 ValidationError.prototype.prefixWith = function (dataPrefix, schemaPrefix) {
 	if (dataPrefix !== null) {
-		dataPrefix = dataPrefix.replace("~", "~0").replace("/", "~1");
+		dataPrefix = RelativeJsonPointer.encodeComponent(dataPrefix);
 		this.dataPath = "/" + dataPrefix + this.dataPath;
 	}
 	if (schemaPrefix !== null) {
-		schemaPrefix = schemaPrefix.replace("~", "~0").replace("/", "~1");
+		schemaPrefix = RelativeJsonPointer.encodeComponent(schemaPrefix);
 		this.schemaPath = "/" + schemaPrefix + this.schemaPath;
 	}
 	if (this.subErrors !== null) {
@@ -1071,7 +1181,7 @@ function createApi(language) {
 				schema = {"$ref": schema};
 			}
 			context.addSchema("", schema);
-			var error = context.validateAll(data, schema);
+			var error = context.validateAll(data, schema, null, null, new DataContext(data));
 			this.error = error;
 			this.missing = context.missing;
 			this.valid = (error === null);
@@ -1088,7 +1198,7 @@ function createApi(language) {
 				schema = {"$ref": schema};
 			}
 			context.addSchema("", schema);
-			context.validateAll(data, schema);
+			context.validateAll(data, schema, null, null, new DataContext(data));
 			var result = {};
 			result.errors = context.errors;
 			result.missing = context.missing;

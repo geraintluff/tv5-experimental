@@ -14,7 +14,7 @@ function normSchema(schema, baseUri) {
 			schema['$ref'] = resolveUrl(baseUri, schema['$ref']);
 		} else {
 			for (var key in schema) {
-				if (key !== "enum") {
+				if (key !== "enum" && key !== "$data") {
 					normSchema(schema[key], baseUri);
 				}
 			}

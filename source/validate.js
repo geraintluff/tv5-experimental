@@ -173,7 +173,7 @@ ValidatorContext.prototype.reset = function () {
 	this.errors = [];
 };
 
-ValidatorContext.prototype.validateAll = function (data, schema, dataPathParts, schemaPathParts) {
+ValidatorContext.prototype.validateAll = function (data, schema, dataPathParts, schemaPathParts, dataContext) {
 	var topLevel;
 	if (schema['$ref'] !== undefined) {
 		schema = this.getSchema(schema['$ref']);
@@ -215,13 +215,13 @@ ValidatorContext.prototype.validateAll = function (data, schema, dataPathParts, 
 	}
 
 	var errorCount = this.errors.length;
-	var error = this.validateBasic(data, schema)
-		|| this.validateNumeric(data, schema)
-		|| this.validateString(data, schema)
-		|| this.validateArray(data, schema)
-		|| this.validateObject(data, schema)
-		|| this.validateCombinations(data, schema)
-		|| this.validateFormat(data, schema)
+	var error = this.validateBasic(data, schema, dataContext)
+		|| this.validateNumeric(data, schema, dataContext)
+		|| this.validateString(data, schema, dataContext)
+		|| this.validateArray(data, schema, dataContext)
+		|| this.validateObject(data, schema, dataContext)
+		|| this.validateCombinations(data, schema, dataContext)
+		|| this.validateFormat(data, schema, dataContext)
 		|| null;
 
 	if (topLevel) {
@@ -246,17 +246,44 @@ ValidatorContext.prototype.validateAll = function (data, schema, dataPathParts, 
 
 	return this.handleError(error);
 };
-ValidatorContext.prototype.validateFormat = function (data, schema) {
-	if (typeof schema.format !== 'string' || !this.formatValidators[schema.format]) {
+ValidatorContext.prototype.validateFormat = function (data, schema, dataContext) {
+	var format = dataContext.schemaValue(schema.format);
+	if (typeof format !== 'string' || !this.formatValidators[format]) {
 		return null;
 	}
-	var errorMessage = this.formatValidators[schema.format].call(null, data, schema);
+	var errorMessage = this.formatValidators[format].call(null, data, schema);
 	if (typeof errorMessage === 'string' || typeof errorMessage === 'number') {
 		return this.createError(ErrorCodes.FORMAT_CUSTOM, {message: errorMessage}).prefixWith(null, "format");
 	} else if (errorMessage && typeof errorMessage === 'object') {
 		return this.createError(ErrorCodes.FORMAT_CUSTOM, {message: errorMessage.message || "?"}, errorMessage.dataPath || null, errorMessage.schemaPath || "/format");
 	}
 	return null;
+};
+
+function DataContext(document, pointer) {
+	this.document = document;
+	this.pointer = pointer || "";
+}
+DataContext.prototype = {
+	add: function (keyOrIndex) {
+		var suffix = "/" + RelativeJsonPointer.encodeComponent("" + keyOrIndex);
+		return new DataContext(this.document, this.pointer + suffix);
+	},
+	getValue: function (pointer) {
+		try {
+			return RelativeJsonPointer.resolve([this.pointer, pointer], this.document);
+		} catch (e) {
+			// TODO: this is terrible
+			console.log(e);
+			return undefined;
+		}
+	},
+	schemaValue: function (schemaValue) {
+		if (schemaValue && schemaValue['$data'] !== undefined) {
+			return this.getValue(schemaValue['$data']);
+		}
+		return schemaValue;
+	}
 };
 
 function recursiveCompare(A, B) {

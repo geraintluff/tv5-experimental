@@ -1790,4 +1790,101 @@ describe("Issue 32", function () {
 		//this.assert(expectedMultipleErrorResult.errors.length == 1, 'validateMultiple should have exactly one error');
 	});
 });
+describe("Use $data for minimum/maximum", function () {
+	it("A <= B <= C", function () {
+		var schema = {
+			type: "object",
+			properties: {
+				"A": {"type": "number"},
+				"B": {
+					type: "number",
+					minimum: {"$data": "1/A"},
+					maximum: {"$data": "1/C"}
+				},
+				"C": {"type": "number"}
+			}
+		};
+		
+		var data1 = {A: 0, B: 1, C:2};
+		var result1 = tv5.validateMultiple(data1, schema);
+		assert.isTrue(result1.valid, "data1 should be valid");
+
+		var data2 = {A: 0, B: -1, C:2};
+		var result2 = tv5.validateMultiple(data2, schema);
+		assert.isFalse(result2.valid, "data2 should be invalid");
+
+		var data3 = {A: 0, B: 4, C:2};
+		var result3 = tv5.validateMultiple(data3, schema);
+		assert.isFalse(result3.valid, "data3 should be invalid");
+	});
+});
+
+describe("Use $data for minLength/maxLength", function () {
+	it("string.length < stringLength", function () {
+		var schema = {
+			type: "object",
+			properties: {
+				"stringLength": {"type": "integer", "minimum": 0},
+				"string": {
+					type: "string",
+					maxLength: {"$data": "1/stringLength"}
+				}
+			}
+		};
+		
+		var data1 = {stringLength: 2, string: ":)"};
+		var result1 = tv5.validateMultiple(data1, schema);
+		assert.isTrue(result1.valid, "data1 should be valid");
+
+		var data2 = {stringLength: 0, string: "Oh no!"};
+		var result2 = tv5.validateMultiple(data2, schema);
+		assert.isFalse(result2.valid, "data2 should be invalid");
+
+		var data3 = {string: "blah", "stringLength": null};
+		var result3 = tv5.validateMultiple(data3, schema);
+		assert.isFalse(result3.valid, "data3 should be invalid, but no error thrown");
+	});
+});
+
+describe("Registering custom validator", function () {
+	it("Custom validator is passed a schema", function () {
+		tv5.addFormat('test-format', function (data, schema) {
+			if (!schema) {
+				throw new Error("schema not provided");
+			}
+			return null;
+		});
+		
+		var schema = {format: 'test-format'};
+		var data1 = "test string";
+		
+		tv5.validate(data1, schema);
+	});
+
+	it("Custom validator can access formatMinimum", function () {
+		tv5.addFormat('test-format', function (data, schema) {
+			if (schema.formatMinimum !== undefined) {
+				if (data < schema.formatMinimum) {
+					return {
+						dataPath: "",
+						schemaPath: "/formatMinimum",
+						message: "data is less than format minimum"
+					};
+				}
+				// Ignore all other format* keywords, because we're allowed to.
+			}
+			return null;
+		});
+		
+		var schema = {format: 'test-format', formatMinimum: 10};
+		var data1 = 15;
+		var data2 = 5;
+		
+		assert.isTrue(tv5.validate(data1, schema));
+		assert.isFalse(tv5.validate(data2, schema));
+		assert.includes(tv5.error.message, 'data is less than format minimum');
+		assert.equal(tv5.error.schemaPath, '/formatMinimum');
+	});
+});
+
 //@ sourceMappingURL=all_concat.js.map

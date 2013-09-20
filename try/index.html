@@ -82,18 +82,24 @@
 				<tr>
 					<td style="position: relative">
 <div id="editor-data">{
-	"foo": "bar"
+	"smaller": 15,
+	"larger": 17.5
 }</div>
 					</td>
 					<td style="position: relative">
 <div id="editor-schema">{
 	"type": "object",
 	"properties": {
-		"foo": {
-			"type": "string"
+		"smaller": {
+			"type": "number"
+		},
+		"larger": {
+			"type": "number",
+			"minimum": {"$data": "1/smaller"},
+			"exclusiveMinimum": true
 		}
 	},
-	"required": ["foo"]
+	"required": ["smaller", "larger"]
 }</div>
 					</td>
 				</tr>

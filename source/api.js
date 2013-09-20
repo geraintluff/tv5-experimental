@@ -27,7 +27,9 @@ var ErrorCodes = {
 	ARRAY_UNIQUE: 402,
 	ARRAY_ADDITIONAL_ITEMS: 403,
 	// Format errors
-	FORMAT_CUSTOM: 500
+	FORMAT_CUSTOM: 500,
+	// Data-reference errors
+	DATA_PATH_ERROR: 600
 };
 var ErrorMessagesDefault = {
 	INVALID_TYPE: "invalid type: {type} (expected {expected})",
@@ -58,7 +60,8 @@ var ErrorMessagesDefault = {
 	ARRAY_UNIQUE: "Array items are not unique (indices {match1} and {match2})",
 	ARRAY_ADDITIONAL_ITEMS: "Additional items not allowed",
 	// Format errors
-	FORMAT_CUSTOM: "Format validation failed ({message})"
+	FORMAT_CUSTOM: "Format validation failed ({message})",
+	DATA_PATH_ERROR: "Data path error ({message})"
 };
 
 function ValidationError(code, message, dataPath, schemaPath, subErrors) {
@@ -74,11 +77,11 @@ function ValidationError(code, message, dataPath, schemaPath, subErrors) {
 ValidationError.prototype = new Error();
 ValidationError.prototype.prefixWith = function (dataPrefix, schemaPrefix) {
 	if (dataPrefix !== null) {
-		dataPrefix = dataPrefix.replace("~", "~0").replace("/", "~1");
+		dataPrefix = RelativeJsonPointer.encodeComponent(dataPrefix);
 		this.dataPath = "/" + dataPrefix + this.dataPath;
 	}
 	if (schemaPrefix !== null) {
-		schemaPrefix = schemaPrefix.replace("~", "~0").replace("/", "~1");
+		schemaPrefix = RelativeJsonPointer.encodeComponent(schemaPrefix);
 		this.schemaPath = "/" + schemaPrefix + this.schemaPath;
 	}
 	if (this.subErrors !== null) {
@@ -157,7 +160,7 @@ function createApi(language) {
 				schema = {"$ref": schema};
 			}
 			context.addSchema("", schema);
-			var error = context.validateAll(data, schema);
+			var error = context.validateAll(data, schema, null, null, new DataContext(data));
 			this.error = error;
 			this.missing = context.missing;
 			this.valid = (error === null);
@@ -174,7 +177,7 @@ function createApi(language) {
 				schema = {"$ref": schema};
 			}
 			context.addSchema("", schema);
-			context.validateAll(data, schema);
+			context.validateAll(data, schema, null, null, new DataContext(data));
 			var result = {};
 			result.errors = context.errors;
 			result.missing = context.missing;

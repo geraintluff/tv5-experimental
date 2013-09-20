@@ -1,28 +1,30 @@
-ValidatorContext.prototype.validateObject = function validateObject(data, schema) {
+ValidatorContext.prototype.validateObject = function validateObject(data, schema, dataContext) {
 	if (typeof data !== "object" || data === null || Array.isArray(data)) {
 		return null;
 	}
-	return this.validateObjectMinMaxProperties(data, schema)
-		|| this.validateObjectRequiredProperties(data, schema)
-		|| this.validateObjectProperties(data, schema)
-		|| this.validateObjectDependencies(data, schema)
+	return this.validateObjectMinMaxProperties(data, schema, dataContext)
+		|| this.validateObjectRequiredProperties(data, schema, dataContext)
+		|| this.validateObjectProperties(data, schema, dataContext)
+		|| this.validateObjectDependencies(data, schema, dataContext)
 		|| null;
 };
 
-ValidatorContext.prototype.validateObjectMinMaxProperties = function validateObjectMinMaxProperties(data, schema) {
+ValidatorContext.prototype.validateObjectMinMaxProperties = function validateObjectMinMaxProperties(data, schema, dataContext) {
 	var keys = Object.keys(data);
 	var error;
-	if (schema.minProperties !== undefined) {
-		if (keys.length < schema.minProperties) {
-			error = this.createError(ErrorCodes.OBJECT_PROPERTIES_MINIMUM, {propertyCount: keys.length, minimum: schema.minProperties}).prefixWith(null, "minProperties");
+	var minProperties = dataContext.schemaValue(schema.minProperties);
+	var maxProperties = dataContext.schemaValue(schema.maxProperties);
+	if (minProperties !== undefined) {
+		if (keys.length < minProperties) {
+			error = this.createError(ErrorCodes.OBJECT_PROPERTIES_MINIMUM, {propertyCount: keys.length, minimum: minProperties}).prefixWith(null, "minProperties");
 			if (this.handleError(error)) {
 				return error;
 			}
 		}
 	}
-	if (schema.maxProperties !== undefined) {
-		if (keys.length > schema.maxProperties) {
-			error = this.createError(ErrorCodes.OBJECT_PROPERTIES_MAXIMUM, {propertyCount: keys.length, maximum: schema.maxProperties}).prefixWith(null, "maxProperties");
+	if (maxProperties !== undefined) {
+		if (keys.length > maxProperties) {
+			error = this.createError(ErrorCodes.OBJECT_PROPERTIES_MAXIMUM, {propertyCount: keys.length, maximum: maxProperties}).prefixWith(null, "maxProperties");
 			if (this.handleError(error)) {
 				return error;
 			}
@@ -31,10 +33,11 @@ ValidatorContext.prototype.validateObjectMinMaxProperties = function validateObj
 	return null;
 };
 
-ValidatorContext.prototype.validateObjectRequiredProperties = function validateObjectRequiredProperties(data, schema) {
-	if (schema.required !== undefined) {
-		for (var i = 0; i < schema.required.length; i++) {
-			var key = schema.required[i];
+ValidatorContext.prototype.validateObjectRequiredProperties = function validateObjectRequiredProperties(data, schema, dataContext) {
+	var required = dataContext.schemaValue(schema.required);
+	if (required !== undefined) {
+		for (var i = 0; i < required.length; i++) {
+			var key = required[i];
 			if (data[key] === undefined) {
 				var error = this.createError(ErrorCodes.OBJECT_REQUIRED, {key: key}).prefixWith(null, "" + i).prefixWith(null, "required");
 				if (this.handleError(error)) {
@@ -46,13 +49,13 @@ ValidatorContext.prototype.validateObjectRequiredProperties = function validateO
 	return null;
 };
 
-ValidatorContext.prototype.validateObjectProperties = function validateObjectProperties(data, schema) {
+ValidatorContext.prototype.validateObjectProperties = function validateObjectProperties(data, schema, dataContext) {
 	var error;
 	for (var key in data) {
 		var foundMatch = false;
 		if (schema.properties !== undefined && schema.properties[key] !== undefined) {
 			foundMatch = true;
-			if (error = this.validateAll(data[key], schema.properties[key], [key], ["properties", key])) {
+			if (error = this.validateAll(data[key], schema.properties[key], [key], ["properties", key], dataContext.add(key))) {
 				return error;
 			}
 		}
@@ -61,7 +64,7 @@ ValidatorContext.prototype.validateObjectProperties = function validateObjectPro
 				var regexp = new RegExp(patternKey);
 				if (regexp.test(key)) {
 					foundMatch = true;
-					if (error = this.validateAll(data[key], schema.patternProperties[patternKey], [key], ["patternProperties", patternKey])) {
+					if (error = this.validateAll(data[key], schema.patternProperties[patternKey], [key], ["patternProperties", patternKey], dataContext.add(key))) {
 						return error;
 					}
 				}
@@ -76,7 +79,7 @@ ValidatorContext.prototype.validateObjectProperties = function validateObjectPro
 					}
 				}
 			} else {
-				if (error = this.validateAll(data[key], schema.additionalProperties, [key], ["additionalProperties"])) {
+				if (error = this.validateAll(data[key], schema.additionalProperties, [key], ["additionalProperties"], dataContext.add(key))) {
 					return error;
 				}
 			}
@@ -85,7 +88,7 @@ ValidatorContext.prototype.validateObjectProperties = function validateObjectPro
 	return null;
 };
 
-ValidatorContext.prototype.validateObjectDependencies = function validateObjectDependencies(data, schema) {
+ValidatorContext.prototype.validateObjectDependencies = function validateObjectDependencies(data, schema, dataContext) {
 	var error;
 	if (schema.dependencies !== undefined) {
 		for (var depKey in schema.dependencies) {
@@ -109,7 +112,7 @@ ValidatorContext.prototype.validateObjectDependencies = function validateObjectD
 						}
 					}
 				} else {
-					if (error = this.validateAll(data, dep, [], ["dependencies", depKey])) {
+					if (error = this.validateAll(data, dep, [], ["dependencies", depKey], dataContext)) {
 						return error;
 					}
 				}

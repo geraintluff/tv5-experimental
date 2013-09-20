@@ -1,16 +1,17 @@
-ValidatorContext.prototype.validateBasic = function validateBasic(data, schema) {
+ValidatorContext.prototype.validateBasic = function validateBasic(data, schema, dataContext) {
 	var error;
-	if (error = this.validateType(data, schema)) {
+	if (error = this.validateType(data, schema, dataContext)) {
 		return error.prefixWith(null, "type");
 	}
-	if (error = this.validateEnum(data, schema)) {
+	if (error = this.validateEnum(data, schema, dataContext)) {
 		return error.prefixWith(null, "type");
 	}
 	return null;
 };
 
-ValidatorContext.prototype.validateType = function validateType(data, schema) {
-	if (schema.type === undefined) {
+ValidatorContext.prototype.validateType = function validateType(data, schema, dataContext) {
+	var allowedTypes = dataContext.schemaValue(schema.type);
+	if (allowedTypes === undefined) {
 		return null;
 	}
 	var dataType = typeof data;
@@ -19,7 +20,6 @@ ValidatorContext.prototype.validateType = function validateType(data, schema) {
 	} else if (Array.isArray(data)) {
 		dataType = "array";
 	}
-	var allowedTypes = schema.type;
 	if (typeof allowedTypes !== "object") {
 		allowedTypes = [allowedTypes];
 	}
@@ -33,12 +33,13 @@ ValidatorContext.prototype.validateType = function validateType(data, schema) {
 	return this.createError(ErrorCodes.INVALID_TYPE, {type: dataType, expected: allowedTypes.join("/")});
 };
 
-ValidatorContext.prototype.validateEnum = function validateEnum(data, schema) {
-	if (schema["enum"] === undefined) {
+ValidatorContext.prototype.validateEnum = function validateEnum(data, schema, dataContext) {
+	var enumValues = dataContext.schemaValue(schema['enum']);
+	if (enumValues === undefined) {
 		return null;
 	}
-	for (var i = 0; i < schema["enum"].length; i++) {
-		var enumVal = schema["enum"][i];
+	for (var i = 0; i < enumValues.length; i++) {
+		var enumVal = enumValues[i];
 		if (recursiveCompare(data, enumVal)) {
 			return null;
 		}
