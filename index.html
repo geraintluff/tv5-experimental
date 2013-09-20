@@ -111,9 +111,15 @@
     }
 </script>
 <div id="main">
-<h1>Experimental Validator for <em>hypothetical</em> v5 JSON Schema features</h1>
+<h1>tv5-experimental</h1>
+<h3>Experimental Validator for <em>hypothetical</em> v5 JSON Schema features</h3>
 <p>This is a variant of the <code>tv4</code> JSON Schema validator.  It is intended as a playground to experiment with possible features for the next version of the draft, to provide a concrete example of how such features could work.</p>
 <p>The features included in this package are <strong>not guaranteed</strong> to make it into the standard, and are highly likely to change.</p>
+<h2>Currently supported features</h2>
+<ul>
+<li><a href="https://github.com/json-schema/json-schema/wiki/%24data-%28v5-proposal%29"><code>$data</code></a> - allow schemas to use values from the data, specified using Relative JSON Pointers</li>
+</ul>
+<p>(<code>formatMinimum</code>/<code>formatMaximum</code> can actually already be used in <code>tv4</code> - basically, you can register a [custom validator] function for a particular format, and this can explore any other schema properties it likes.)</p>
 
 </div>
 </body>
