@@ -52,6 +52,7 @@ ValidatorContext.prototype.validateObjectRequiredProperties = function validateO
 ValidatorContext.prototype.validateObjectProperties = function validateObjectProperties(data, schema, dataContext) {
 	var error;
 	for (var key in data) {
+		var keyPointerPath = dataContext.add(key).pointer;
 		var foundMatch = false;
 		if (schema.properties !== undefined && schema.properties[key] !== undefined) {
 			foundMatch = true;
@@ -70,19 +71,30 @@ ValidatorContext.prototype.validateObjectProperties = function validateObjectPro
 				}
 			}
 		}
-		if (!foundMatch && schema.additionalProperties !== undefined) {
-			if (typeof schema.additionalProperties === "boolean") {
-				if (!schema.additionalProperties) {
-					error = this.createError(ErrorCodes.OBJECT_ADDITIONAL_PROPERTIES, {}).prefixWith(key, "additionalProperties");
-					if (this.handleError(error)) {
+		if (!foundMatch) {
+			if (schema.additionalProperties !== undefined) {
+				if (this.trackUnknownProperties) {
+					this.knownPropertyPaths[keyPointerPath] = true;
+					delete this.unknownPropertyPaths[keyPointerPath];
+				}
+				if (typeof schema.additionalProperties === "boolean") {
+					if (!schema.additionalProperties) {
+						error = this.createError(ErrorCodes.OBJECT_ADDITIONAL_PROPERTIES, {}).prefixWith(key, "additionalProperties");
+						if (this.handleError(error)) {
+							return error;
+						}
+					}
+				} else {
+					if (error = this.validateAll(data[key], schema.additionalProperties, [key], ["additionalProperties"], dataContext.add(key))) {
 						return error;
 					}
 				}
-			} else {
-				if (error = this.validateAll(data[key], schema.additionalProperties, [key], ["additionalProperties"], dataContext.add(key))) {
-					return error;
-				}
+			} else if (this.trackUnknownProperties && !this.knownPropertyPaths[keyPointerPath]) {
+				this.unknownPropertyPaths[keyPointerPath] = true;
 			}
+		} else if (this.trackUnknownProperties) {
+			this.knownPropertyPaths[keyPointerPath] = true;
+			delete this.unknownPropertyPaths[keyPointerPath];
 		}
 	}
 	return null;

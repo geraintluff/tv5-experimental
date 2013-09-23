@@ -29,7 +29,9 @@ var ErrorCodes = {
 	// Format errors
 	FORMAT_CUSTOM: 500,
 	// Data-reference errors
-	DATA_PATH_ERROR: 600
+	DATA_PATH_ERROR: 600,
+	// Non-standard validation options
+	UNKNOWN_PROPERTY: 1000
 };
 var ErrorMessagesDefault = {
 	INVALID_TYPE: "invalid type: {type} (expected {expected})",
@@ -61,7 +63,10 @@ var ErrorMessagesDefault = {
 	ARRAY_ADDITIONAL_ITEMS: "Additional items not allowed",
 	// Format errors
 	FORMAT_CUSTOM: "Format validation failed ({message})",
-	DATA_PATH_ERROR: "Data path error ({message})"
+	// Data-reference errors
+	DATA_PATH_ERROR: "Data path error ({message})",
+	// Non-standard validation options
+	UNKNOWN_PROPERTY: "Unknown property (not in schema)"
 };
 
 function ValidationError(code, message, dataPath, schemaPath, subErrors) {
@@ -154,13 +159,16 @@ function createApi(language) {
 			}
 			return result;
 		},
-		validate: function (data, schema, checkRecursive) {
-			var context = new ValidatorContext(globalContext, false, languages[currentLanguage], checkRecursive);
+		validate: function (data, schema, checkRecursive, banUnknownProperties) {
+			var context = new ValidatorContext(globalContext, false, languages[currentLanguage], checkRecursive, banUnknownProperties);
 			if (typeof schema === "string") {
 				schema = {"$ref": schema};
 			}
 			context.addSchema("", schema);
 			var error = context.validateAll(data, schema, null, null, new DataContext(data));
+			if (!error && banUnknownProperties) {
+				error = context.banUnknownProperties();
+			}
 			this.error = error;
 			this.missing = context.missing;
 			this.valid = (error === null);
@@ -171,13 +179,16 @@ function createApi(language) {
 			this.validate.apply(result, arguments);
 			return result;
 		},
-		validateMultiple: function (data, schema, checkRecursive) {
-			var context = new ValidatorContext(globalContext, true, languages[currentLanguage], checkRecursive);
+		validateMultiple: function (data, schema, checkRecursive, banUnknownProperties) {
+			var context = new ValidatorContext(globalContext, true, languages[currentLanguage], checkRecursive, banUnknownProperties);
 			if (typeof schema === "string") {
 				schema = {"$ref": schema};
 			}
 			context.addSchema("", schema);
 			context.validateAll(data, schema, null, null, new DataContext(data));
+			if (banUnknownProperties) {
+				context.banUnknownProperties();
+			}
 			var result = {};
 			result.errors = context.errors;
 			result.missing = context.missing;

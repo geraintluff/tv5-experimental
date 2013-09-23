@@ -1,4 +1,4 @@
-var ValidatorContext = function ValidatorContext(parent, collectMultiple, errorMessages, checkRecursive) {
+var ValidatorContext = function ValidatorContext(parent, collectMultiple, errorMessages, checkRecursive, trackUnknownProperties) {
 	this.missing = [];
 	this.missingMap = {};
 	this.formatValidators = parent ? Object.create(parent.formatValidators) : {};
@@ -12,6 +12,11 @@ var ValidatorContext = function ValidatorContext(parent, collectMultiple, errorM
 		this.scannedFrozen = [];
 		this.scannedFrozenSchemas = [];
 		this.key = 'tv5_validation_id';
+	}
+	if (trackUnknownProperties) {
+		this.trackUnknownProperties = true;
+		this.knownPropertyPaths = {};
+		this.unknownPropertyPaths = {};
 	}
 	this.errorMessages = errorMessages;
 };
@@ -41,6 +46,15 @@ ValidatorContext.prototype.prefixErrors = function (startIndex, dataPath, schema
 		this.errors[i] = this.errors[i].prefixWith(dataPath, schemaPath);
 	}
 	return this;
+};
+ValidatorContext.prototype.banUnknownProperties = function () {
+	for (var unknownPath in this.unknownPropertyPaths) {
+		var error = this.createError(ErrorCodes.UNKNOWN_PROPERTY, {path: unknownPath}, unknownPath, "");
+		var result = this.handleError(error);
+		if (result) {
+			return result;
+		}
+	}
 };
 
 ValidatorContext.prototype.addFormat = function (format, validator) {
